@@ -41,6 +41,14 @@ class payment extends payinterface
 
     public function pay($orderSn, $amt, $bankId, $cardType, $type)
     {
+        //约定金额单位为元
+        $amt = floatval($amt) * 100;
+        $amt = strval($amt);
+        $len = strlen($amt);
+        for ($i = 0; $i < (12 - $len); $i++) {
+            $amt = "0" . $amt;
+        }
+
         $data = array(
             'mid' => $this->mid,
             'orderCode' => $orderSn,
