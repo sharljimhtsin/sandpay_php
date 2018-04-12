@@ -7,7 +7,7 @@ use think\Request;
 
 class orderpay extends payinterface
 {
-    private function getToken($_POST)
+    private function getToken($map)
     {
         date_default_timezone_set("Asia/Shanghai");
         $prikey = common::loadPk12Cert(common::PRI_KEY_PATH, common::CERT_PWD);
@@ -19,21 +19,21 @@ class orderpay extends payinterface
                 'method' => 'sandpay.trade.pay',
                 'productId' => '00000007',
                 'accessType' => '1',
-                'mid' => $_POST['mid'],
+                'mid' => $map['mid'],
                 'channelType' => '07',
                 'reqTime' => date('YmdHis', time())
             ),
             'body' => array(
-                'orderCode' => $_POST['orderCode'],
-                'totalAmount' => $_POST['totalAmount'],
-                'subject' => $_POST['subject'],
-                'body' => $_POST['body'],
-                'txnTimeOut' => $_POST['txnTimeOut'],
-                'payMode' => $_POST['payMode'],
-                'payExtra' => json_encode(array('payType' => $_POST['payType'], 'bankCode' => $_POST['bankCode'])),
-                'clientIp' => $_POST['clientIp'],
-                'notifyUrl' => $_POST['notifyUrl'],
-                'frontUrl' => $_POST['frontUrl'],
+                'orderCode' => $map['orderCode'],
+                'totalAmount' => $map['totalAmount'],
+                'subject' => $map['subject'],
+                'body' => $map['body'],
+                'txnTimeOut' => $map['txnTimeOut'],
+                'payMode' => $map['payMode'],
+                'payExtra' => json_encode(array('payType' => $map['payType'], 'bankCode' => $map['bankCode'])),
+                'clientIp' => $map['clientIp'],
+                'notifyUrl' => $map['notifyUrl'],
+                'frontUrl' => $map['frontUrl'],
                 'extend' => ''
             )
         );
@@ -45,15 +45,10 @@ class orderpay extends payinterface
             'data' => json_encode($data),
             'sign' => $sign
         );
-
         $result = common::http_post_json(common::API_HOST . '/order/pay', $post);
-
         parse_str(urldecode($result), $arr);
-
         $arr['data'] = str_replace(array("  ", "\t", "\n", "\r"), array('', '', '', ''), $arr['data']);
-
         $data = json_decode($arr['data'], true);
-
         $credential = json_decode($data['body']['credential'], true);
 
         if (isset($credential['params']['orig']) && isset($credential['params']['sign'])) {
@@ -84,7 +79,14 @@ class orderpay extends payinterface
 
     public function pay($orderSn, $amt, $bankId, $cardType, $type)
     {
-        //$mid, $orderCode, $totalAmount, $subject, $body, $txnTimeOut, $payMode, $bankCode, $payType, $clientIp, $notifyUrl, $frontUrl, $extend
+        //约定金额单位为元
+        $amt = floatval($amt) * 100;
+        $amt = strval($amt);
+        $len = strlen($amt);
+        for ($i = 0; $i < (12 - $len); $i++) {
+            $amt = "0" . $amt;
+        }
+
         $post = array(
             "mid" => common::MID,
             "orderCode" => $orderSn,
@@ -96,12 +98,15 @@ class orderpay extends payinterface
             "bankCode" => $bankId,
             "payType" => "1",
             "clientIp" => "47.94.149.36",
-            "notifyUrl" => Request::instance()->domain() . '/api/notify/Sdpay',
-            "frontUrl" => "",
+            "notifyUrl" => Request::instance()->domain() . '/api/notify/SdpayAlt',
+            "frontUrl" => Request::instance()->domain() . '/api/notify/Sdpay',
             "extend" => ""
         );
-        $credential = $this->getToken($post);
-        return $credential;
+        $credentialStr = $this->getToken($post);
+        $credentialObj = json_decode($credentialStr, JSON_OBJECT_AS_ARRAY);
+        $newData = $credentialObj["params"];
+        $newData["actionUrl"] = $credentialObj["submitUrl"];
+        return $newData;
     }
 
     public function bankList($type)
@@ -147,9 +152,9 @@ class orderpay extends payinterface
                 'cardType' => ''
             ),
             array('bankName' => '兴业银行',
-                'bankID'   => '03090000',
+                'bankID' => '03090000',
                 'otherBankID' => '',
-                'cardType'    => ''
+                'cardType' => ''
             ),
 
             array('bankName' => '农业银行',
@@ -178,14 +183,14 @@ class orderpay extends payinterface
                 'cardType' => ''
             ),
             array('bankName' => '浦发银行',
-                'bankID'   => '03100000',
+                'bankID' => '03100000',
                 'otherBankID' => '',
-                'cardType'    => ''
+                'cardType' => ''
             ),
             array('bankName' => '平安银行',
-                'bankID'   => '03070000',
+                'bankID' => '03070000',
                 'otherBankID' => '',
-                'cardType'    => ''
+                'cardType' => ''
             ),
             array('bankName' => '光大银行',
                 'bankID' => '03030000',

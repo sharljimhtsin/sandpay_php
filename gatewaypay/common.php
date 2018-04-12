@@ -5,12 +5,18 @@ namespace gatewaypay;
 class common
 {
     //--------------------------------------------1、基础参数配置------------------------------------------------
-
-    const API_HOST = 'http://61.129.71.103:8003/gateway/api';//测试环境地址
-    const PUB_KEY_PATH = 'cert/sand-test.cer';//测试环境公钥
-    const PRI_KEY_PATH = 'cert/mid-test.pfx';//测试环境私钥
+    /*
+     *
+     * 生产：URL=https://cashier.sandpay.com.cn/gateway/api
+       测试：URL=http://61.129.71.103:8003/gateway/api
+     *
+     */
+    const API_HOST_TEST = 'http://61.129.71.103:8003/gateway/api';//测试环境地址
+    const API_HOST = 'https://cashier.sandpay.com.cn/gateway/api';//测试环境地址
+    const PUB_KEY_PATH = '../extend/payment/cert/hehe.cer';//测试环境公钥
+    const PRI_KEY_PATH = '../extend/payment/cert/shenyao.pfx';//测试环境私钥
     const CERT_PWD = '123456'; //私钥证书密码
-    const MID = '1234567'; //商户号
+    const MID = '17123285'; //商户号
 
 //--------------------------------------------end基础参数配置------------------------------------------------
     /**
@@ -83,11 +89,9 @@ class common
             $resource = openssl_pkey_get_private($path);
             $result = openssl_sign($plainText, $sign, $resource);
             openssl_free_key($resource);
-
             if (!$result) {
                 throw new \Exception('签名出错' . $plainText);
             }
-
             return base64_encode($sign);
         } catch (\Exception $e) {
             throw $e;
@@ -102,7 +106,6 @@ class common
      */
     function send_post($url, $post_data)
     {
-
         $postdata = http_build_query($post_data);
         $options = array(
             'http' => array(
@@ -114,7 +117,6 @@ class common
         );
         $context = stream_context_create($options);
         $result = file_get_contents($url, false, $context);
-
         return $result;
     }
 
@@ -128,13 +130,11 @@ class common
      */
     static function http_post_json($url, $param)
     {
-
         if (empty($url) || empty($param)) {
             return false;
         }
         $param = http_build_query($param);
         try {
-
             $ch = curl_init();//初始化curl
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, 1);
@@ -146,11 +146,9 @@ class common
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             $data = curl_exec($ch);//运行curl
             curl_close($ch);
-
             if (!$data) {
                 throw new \Exception('请求出错');
             }
-
             return $data;
         } catch (\Exception $e) {
             throw $e;
@@ -170,13 +168,9 @@ class common
         $resource = openssl_pkey_get_public($path);
         $result = openssl_verify($plainText, base64_decode($sign), $resource);
         openssl_free_key($resource);
-
         if (!$result) {
-
             throw new \Exception('签名验证未通过,plainText:' . $plainText . '。sign:' . $sign, '02002');
-
         }
-
         return $result;
     }
 
@@ -189,7 +183,6 @@ class common
      */
     static function json_encodes($array)
     {
-
         if (version_compare(PHP_VERSION, '5.4.0', '<')) {
             $str = json_encode($array);
             $str = preg_replace_callback("#\\\u([0-9a-f]{4})#i", function ($matchs) {
@@ -226,13 +219,10 @@ class common
 
     static function mb_array_chunk($arr)
     {
-
         $credential = json_decode($arr['body']['credential'], true);
         $credential['params']['orig'] = self::mb_chunk_split($credential['params']['orig'], 76, '%0A');
         $credential['params']['sign'] = self::mb_chunk_split($credential['params']['sign'], 76, '%0A');
         $arr['body']['credential'] = str_replace(array('==', '+', '='), array('%3D%3D', '%2B', '%3D'), self::json_encodes($credential));
-
         return self::json_encodes($arr);
-
     }
 }
