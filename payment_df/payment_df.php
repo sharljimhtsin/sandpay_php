@@ -98,11 +98,16 @@ class payment_df extends payinterface
             "bankCode" => $bankId,
         );
         $credentialStr = $this->getToken($post);
-        //TODO
+        if (empty($credentialStr)) {
+            return array("error" => 1);
+        }
         $credentialObj = json_decode($credentialStr, JSON_OBJECT_AS_ARRAY);
-        $newData = $credentialObj["params"];
-        $newData["actionUrl"] = $credentialObj["submitUrl"];
-        return $newData;
+        if ($credentialObj["respCode"] == "0000" && $credentialObj["resultFlag"] == 0) {//respCode=0000 且 resultFlag=0
+            $newData = $credentialObj["params"];
+            $newData["actionUrl"] = $credentialObj["submitUrl"];
+            return $newData;
+        }
+        return array("error" => 1);
     }
 
     public function bankList($type)
